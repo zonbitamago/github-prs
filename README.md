@@ -22,7 +22,7 @@
    ```sh
    npm run dev
    ```
-   ブラウザで `http://localhost:5173` を開いて動作を確認してください。
+   ブラウザで `http://localhost:5173/github-prs/` を開いて動作を確認してください。
 
 ## ディレクトリ構成
 
