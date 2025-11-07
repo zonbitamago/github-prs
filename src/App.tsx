@@ -12,13 +12,36 @@ const App: React.FC = () => {
   const [token, setToken] = useState(getTokenFromQuery());
   const { prs, loading, error } = useReviewedPRs(token);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
 
-  const filteredPrs = prs.filter((pr) =>
-    pr.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pr.repository_url.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 利用可能なstatusのリストを取得
+  const availableStatuses = Array.from(new Set(prs.map((pr) => pr.state)));
+
+  // statusフィルタとテキスト検索フィルタを組み合わせる
+  const filteredPrs = prs.filter((pr) => {
+    const matchesSearch = pr.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pr.repository_url.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = selectedStatuses.size === 0 || selectedStatuses.has(pr.state);
+    return matchesSearch && matchesStatus;
+  });
 
   const sortedPrs = filteredPrs.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+  // statusフィルタのトグル機能
+  const toggleStatus = (status: string) => {
+    const newStatuses = new Set(selectedStatuses);
+    if (newStatuses.has(status)) {
+      newStatuses.delete(status);
+    } else {
+      newStatuses.add(status);
+    }
+    setSelectedStatuses(newStatuses);
+  };
+
+  // 全てのstatusをクリア
+  const clearStatusFilters = () => {
+    setSelectedStatuses(new Set());
+  };
 
   const copyAllLinks = () => {
     const links = sortedPrs.map((pr) => pr.html_url).join('\n');
@@ -44,6 +67,48 @@ const App: React.FC = () => {
         onChange={(e) => setSearchTerm(e.target.value)}
         style={{ marginTop: '1rem', padding: '0.5rem', width: '100%' }}
       />
+
+      {/* Statusフィルタセクション */}
+      <div style={{ margin: '1rem 0', textAlign: 'left' }}>
+        <div style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>Filter by Status:</div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {availableStatuses.map((status) => (
+            <button
+              key={status}
+              onClick={() => toggleStatus(status)}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: selectedStatuses.has(status) ? '#4CAF50' : '#f0f0f0',
+                color: selectedStatuses.has(status) ? 'white' : 'black',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              {status} ({prs.filter((pr) => pr.state === status).length})
+            </button>
+          ))}
+          {selectedStatuses.size > 0 && (
+            <button
+              onClick={clearStatusFilters}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+        <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+          Showing {sortedPrs.length} of {prs.length} PRs
+        </div>
+      </div>
+
       <button onClick={copyAllLinks} style={{ margin: '1rem 0', padding: '0.5rem 1rem' }}>
         Copy All Links
       </button>
