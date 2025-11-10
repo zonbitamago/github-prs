@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useReviewedPRs } from './hooks/useReviewedPRs';
 
 // URLクエリパラメータからtokenを取得する関数
@@ -8,11 +8,18 @@ function getTokenFromQuery() {
   return params.get('token') || '';
 }
 
+// URLクエリパラメータからstatusを取得する関数
+function getStatusesFromQuery(): Set<string> {
+  const params = new URLSearchParams(window.location.search);
+  const statuses = params.getAll('status');
+  return new Set(statuses);
+}
+
 const App: React.FC = () => {
   const [token, setToken] = useState(getTokenFromQuery());
   const { prs, loading, error } = useReviewedPRs(token);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(getStatusesFromQuery());
 
   // 利用可能なstatusのリストを取得
   const availableStatuses = Array.from(new Set(prs.map((pr) => pr.state)));
@@ -42,6 +49,20 @@ const App: React.FC = () => {
   const clearStatusFilters = () => {
     setSelectedStatuses(new Set());
   };
+
+  // selectedStatusesが変更されたらURLクエリパラメータを更新
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    // 既存のstatusパラメータを削除
+    params.delete('status');
+    // 新しいstatusを追加
+    selectedStatuses.forEach((status) => {
+      params.append('status', status);
+    });
+    // URLを更新(ページリロードなし)
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [selectedStatuses]);
 
   const copyAllLinks = () => {
     const links = sortedPrs.map((pr) => pr.html_url).join('\n');
