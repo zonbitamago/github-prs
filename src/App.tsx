@@ -151,7 +151,7 @@ const App: React.FC = () => {
             {sortedPrs.map((pr) => (
               <tr key={pr.id}>
                 <td>
-                  <a href={pr.repository_url} target="_blank" rel="noopener noreferrer">
+                  <a href={pr.repository_url.replace('https://api.github.com/repos/', 'https://github.com/')} target="_blank" rel="noopener noreferrer">
                     {pr.repository_url.split('/').pop()}
                   </a>
                 </td>
